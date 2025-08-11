@@ -1,18 +1,14 @@
 import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
+
 export class PrismaDatabaseConnection {
-    private client: PrismaClient
     private connected: boolean
     private message: string
 
     constructor() {
-        this.client = new PrismaClient()
         this.connected = false
         this.message = ""
-    }
-
-    get clientInstance(): PrismaClient {
-        return this.client;
     }
 
     get messageText(): string {
@@ -25,7 +21,7 @@ export class PrismaDatabaseConnection {
 
     async connect(): Promise<void> {
         try {
-            await this.client.$connect()
+            await prisma.$connect()
             this.connected = true
             this.message = ""
         } catch (error) {
@@ -37,7 +33,7 @@ export class PrismaDatabaseConnection {
 
     async disconnect(): Promise<void> {
         try {
-            await this.client.$disconnect()
+            await prisma.$disconnect()
             this.connected = false
         } catch (error) {
             this.message = `Error in disconnect database. Detail: ${error}`
@@ -46,3 +42,5 @@ export class PrismaDatabaseConnection {
     }
 
 }
+
+export default prisma;

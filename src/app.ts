@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { swaggerUi, swaggerDocs } from "./doc/swagger";
 import { PrismaDatabaseConnection } from "./config/database";
 import { indexRoute } from "./routes/index-route";
+import { clientRoute } from "./routes/client-route";
 
 dotenv.config();
 
@@ -17,7 +18,9 @@ app.use(express.json());
 
 //routes
 app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
 app.use("/", indexRoute);
+app.use("/clientes", clientRoute);
 
 const startServer = async () => {
     try {
@@ -48,5 +51,8 @@ const shutdown = async () => {
         process.exit(1);
     }
 };
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 
 startServer();
