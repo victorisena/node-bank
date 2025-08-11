@@ -17,6 +17,11 @@ const clientController = new ClientController()
 /**
  * @swagger
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  *   schemas:
  *     Client:
  *       type: object
@@ -30,17 +35,20 @@ const clientController = new ClientController()
  *         email:
  *           type: string
  *           example: joao.silva@example.com
+ *         saldo:
+ *           type: string
+ *           example: "0.00"
  */
 
 /**
  * @swagger
- * /clients:
+ * /clientes:
  *   get:
  *     tags:
  *       - Clients
  *     summary: Retorna a lista de clientes cadastrados
  *     security:
- *       - bearerAuth: []   # Requer autenticação via Bearer Token
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de clientes retornada com sucesso
@@ -55,17 +63,7 @@ const clientController = new ClientController()
  *                 data:
  *                   type: array
  *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                         example: 1
- *                       name:
- *                         type: string
- *                         example: João da Silva
- *                       email:
- *                         type: string
- *                         example: joao.silva@example.com
+ *                     $ref: '#/components/schemas/Client'
  *       401:
  *         description: Não autorizado - token inválido ou ausente
  *       500:
@@ -77,13 +75,13 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /clients/{id}:
+ * /clientes/{id}:
  *   get:
  *     tags:
  *       - Clients
  *     summary: Retorna um cliente específico pelo ID
  *     security:
- *       - bearerAuth: []   # Requer autenticação via Bearer Token
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -104,17 +102,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
  *                   type: string
  *                   example: success
  *                 data:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: string
- *                       example: "123"
- *                     name:
- *                       type: string
- *                       example: João da Silva
- *                     email:
- *                       type: string
- *                       example: joao.silva@example.com
+ *                   $ref: '#/components/schemas/Client'
  *       204:
  *         description: Cliente não encontrado
  *       400:
@@ -130,13 +118,13 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /clients:
+ * /clientes:
  *   post:
  *     tags:
  *       - Clients
  *     summary: Cria um novo cliente
  *     security:
- *       - bearerAuth: []   # Requer autenticação via Bearer Token
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -170,20 +158,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
  *                   type: string
  *                   example: success
  *                 data:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 1
- *                     name:
- *                       type: string
- *                       example: João da Silva
- *                     email:
- *                       type: string
- *                       example: joao.silva@example.com
- *                     saldo:
- *                       type: string
- *                       example: "0.00"
+ *                   $ref: '#/components/schemas/Client'
  *       400:
  *         description: Erro de validação nos campos enviados
  *       401:
@@ -199,11 +174,13 @@ router.post("/", validateName, validatePassword, validateRequest,
 
 /**
  * @swagger
- * /clients/{id}:
+ * /clientes/{id}:
  *   put:
  *     tags:
  *       - Clients
  *     summary: Atualiza um cliente existente
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -241,6 +218,10 @@ router.post("/", validateName, validatePassword, validateRequest,
  *         description: Dados inválidos
  *       404:
  *         description: Cliente não encontrado
+ *       401:
+ *         description: Não autorizado - token inválido ou ausente
+ *       500:
+ *         description: Erro interno no servidor
  */
 router.put("/:id", authMiddleware, validateName, validateEmail, validateRequest,
     async (req: Request, res: Response, next: NextFunction) => {
@@ -250,14 +231,14 @@ router.put("/:id", authMiddleware, validateName, validateEmail, validateRequest,
 
 /**
  * @swagger
- * /clients/{id}:
+ * /clientes/{id}:
  *   delete:
  *     tags:
  *       - Clients
  *     summary: Deleta um cliente pelo ID
  *     description: Remove permanentemente um cliente do sistema com base no ID fornecido.
  *     security:
- *       - bearerAuth: []   # Requer autenticação via Bearer Token
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -287,6 +268,66 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
     await clientController.deleteClient(req, res)
 })
 
+/**
+ * @swagger
+ * /clientes/login:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Realiza login do usuário e retorna um token JWT
+ *     requestBody:
+ *       description: Credenciais para login
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: mypassword123
+ *     responses:
+ *       200:
+ *         description: Login realizado com sucesso, token JWT retornado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *       401:
+ *         description: Falha na autenticação - senha incorreta
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Authentication failed.
+ *       422:
+ *         description: Usuário com email não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: A user with this email couldn't be found.
+ *       500:
+ *         description: Erro interno no servidor
+ */
 router.post("/login", validateEmail, validatePassword, validateRequest,
     async (req: Request, res: Response, next: NextFunction) => {
         await clientController.login(req, res)       
