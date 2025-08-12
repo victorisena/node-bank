@@ -20,6 +20,8 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
         if(!isValid)
             return res.status(403).json({ message: "Unauthorized, token invalid." })
 
+        req.headers["userToken"] = isValid.id
+
         next();
     } catch (error) {
         res.status(500).json({ message: "Failed to authenticate", error });

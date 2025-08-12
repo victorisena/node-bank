@@ -14,9 +14,3 @@ model Client {
   password String
   saldo    Decimal @db.Decimal(18, 2)
 }
-
-model Transactions {
-  id   String    @id @default(uuid())
-  date DateTime?
-  type String
-}

@@ -10,7 +10,7 @@ class ClientController implements IClientController {
     private service = new ClientService()
     private errorHandling = new ErrorHandling()
 
-    async login (req: Request, res: Response): Promise<Response> {
+    async login(req: Request, res: Response): Promise<Response> {
         try {
             const { email, password } = req.body
 
@@ -19,14 +19,14 @@ class ClientController implements IClientController {
                 return res.status(422).json({ message: "A user with this email couldn't be found." });
 
             const isEqual = bcrypt.compare(password, data.password);
-            if(!isEqual)
+            if (!isEqual)
                 return res.status(401).json({ message: "Authentication failed." });
 
             const payload = {
                 id: data.id
             }
 
-            const token : string = generateToken(payload)
+            const token: string = generateToken(payload)
 
             return res.status(200).json({ token })
         } catch (error) {
@@ -47,7 +47,7 @@ class ClientController implements IClientController {
         try {
             const id = req.params.id
             if (typeof id !== 'string') {
-                return res.status(400).json({ message: "Invalid or missing 'id' in headers" });
+                return res.status(400).json({ message: "Invalid or missing 'id' in parameters" });
             }
 
             const data = await this.service.getClientById(id)
@@ -105,7 +105,7 @@ class ClientController implements IClientController {
                 return res.status(400).json({ message: "Invalid 'id' in path" })
 
             const { name, email } = req.body
-            
+
             const client = await this.service.getClientByEmail(email)
             if (client && client.id !== id)
                 return res.status(409).json({ message: "A user with this email already exists." });
@@ -140,6 +140,83 @@ class ClientController implements IClientController {
         }
     }
 
+    async depositar(req: Request, res: Response): Promise<Response> {
+        try {
+            const id = req.params.id
+            if (typeof id !== 'string') {
+                return res.status(400).json({ message: "Invalid or missing 'id' in parameters" });
+            }
+
+            const data = await this.service.getClientById(id)
+            if (!data)
+                return res.status(422).json({ message: "Authentication failed." });
+
+            if (data.id !== req.headers["userToken"])
+                return res.status(422).json({ message: "Authentication failed." });
+
+            const valor = req.body.valor
+
+            const valorDecimal = new Decimal(valor)
+
+            const novoSaldo = data.saldo.add(valorDecimal)
+
+            data.saldo = novoSaldo
+
+            const updated = await this.service.updateClient(id, data)
+            if (!updated) {
+                return res.status(404).json({ message: "Client not found" })
+            }
+
+            return res.status(200).json({ 
+                id: data.id,
+                name: data.name,
+                email: data.email,
+                saldo: data.saldo
+            })
+        } catch (error) {
+            return this.errorHandling.handleError(error, res)
+        }
+    }
+
+    async sacar(req: Request, res: Response): Promise<Response> {
+        try {
+            const id = req.params.id
+            if (typeof id !== 'string') {
+                return res.status(400).json({ message: "Invalid or missing 'id' in parameters" });
+            }
+
+            const data = await this.service.getClientById(id)
+            if (!data)
+                return res.status(422).json({ message: "Authentication failed." });
+
+            if (data.id !== req.headers["userToken"])
+                return res.status(422).json({ message: "Authentication failed." });
+
+            const valor = req.body.valor
+            const valorDecimal = new Decimal(valor)
+
+            if (data.saldo.lessThan(valorDecimal)) {
+                return res.status(400).json({ message: "Saldo insuficiente para o saque." });
+            }
+
+            const novoSaldo = data.saldo.sub(valorDecimal);
+            data.saldo = novoSaldo;
+            
+            const updated = await this.service.updateClient(id, data)
+            if (!updated) {
+                return res.status(404).json({ message: "Client not found" })
+            }
+
+            return res.status(200).json({ 
+                id: data.id,
+                name: data.name,
+                email: data.email,
+                saldo: data.saldo
+            })
+        } catch (error) {
+            return this.errorHandling.handleError(error, res)
+        }
+    }
 }
 
 export default ClientController

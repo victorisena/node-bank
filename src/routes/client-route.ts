@@ -1,7 +1,7 @@
 import express, {type Request, type Response, type NextFunction} from "express"
 import ClientController from "../controllers/client-controller"
 import { authMiddleware } from "../middlewares/auth-middleware"
-import { validateRequest, validatePassword, validateName, validateEmail } from "../middlewares/validation-middleware"
+import { validateRequest, validatePassword, validateName, validateEmail, validateValor } from "../middlewares/validation-middleware"
 
 const router = express.Router()
 const clientController = new ClientController()
@@ -331,6 +331,167 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
 router.post("/login", validateEmail, validatePassword, validateRequest,
     async (req: Request, res: Response, next: NextFunction) => {
         await clientController.login(req, res)       
+    }
+)
+
+/**
+ * @swagger
+ * /clientes/{id}/depositar:
+ *   post:
+ *     tags:
+ *       - Clients
+ *     summary: Realiza um depósito no saldo do cliente pelo ID
+ *     security:
+ *       - bearerAuth: []   # Requer autenticação via Bearer Token
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID do cliente que irá receber o depósito
+ *         schema:
+ *           type: string
+ *           example: "123"
+ *     requestBody:
+ *       description: Valor a ser depositado, deve ser maior que zero
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - valor
+ *             properties:
+ *               valor:
+ *                 type: number
+ *                 format: double
+ *                 minimum: 0.01
+ *                 example: 100.50
+ *     responses:
+ *       200:
+ *         description: Depósito realizado com sucesso e saldo atualizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   example: "123"
+ *                 name:
+ *                   type: string
+ *                   example: João da Silva
+ *                 email:
+ *                   type: string
+ *                   example: joao.silva@example.com
+ *                 saldo:
+ *                   type: string
+ *                   example: "350.50"
+ *       400:
+ *         description: ID inválido ou valor de depósito inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid or missing 'id' in parameters
+ *       401:
+ *         description: Não autorizado - token inválido ou ausente
+ *       404:
+ *         description: Cliente não encontrado
+ *       422:
+ *         description: Falha na autenticação (token ou id inválido)
+ *       500:
+ *         description: Erro interno no servidor
+ */
+router.post("/:id/depositar", authMiddleware, validateValor, validateRequest,
+    async (req: Request, res: Response, next: NextFunction) => {
+        await clientController.depositar(req, res)       
+    }
+)
+
+/**
+ * @swagger
+ * /clients/{id}/sacar:
+ *   post:
+ *     tags:
+ *       - Clients
+ *     summary: Realiza um saque no saldo do cliente
+ *     description: Subtrai um valor do saldo do cliente, desde que haja saldo suficiente.
+ *     security:
+ *       - bearerAuth: []   # Requer autenticação via Bearer Token
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do cliente que fará o saque
+ *         example: "123e4567-e89b-12d3-a456-426614174000"
+ *     requestBody:
+ *       description: Valor a ser sacado
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - valor
+ *             properties:
+ *               valor:
+ *                 type: number
+ *                 format: float
+ *                 example: 100.50
+ *                 description: Valor a ser sacado, deve ser maior que zero e não pode ser negativo
+ *     responses:
+ *       200:
+ *         description: Saque realizado com sucesso, retorna dados atualizados do cliente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   example: "123e4567-e89b-12d3-a456-426614174000"
+ *                 name:
+ *                   type: string
+ *                   example: João da Silva
+ *                 email:
+ *                   type: string
+ *                   example: joao.silva@example.com
+ *                 saldo:
+ *                   type: string
+ *                   example: "399.50"
+ *       400:
+ *         description: Erro de validação, por exemplo valor inválido ou saldo insuficiente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Saldo insuficiente para o saque."
+ *       401:
+ *         description: Não autorizado - token inválido ou ausente
+ *       422:
+ *         description: Falha na autenticação ou cliente não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Authentication failed."
+ *       500:
+ *         description: Erro interno no servidor
+ */
+router.post("/:id/sacar", authMiddleware, validateValor, validateRequest,
+    async (req: Request, res: Response, next: NextFunction) => {
+        await clientController.sacar(req, res)       
     }
 )
 

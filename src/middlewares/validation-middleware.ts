@@ -29,3 +29,16 @@ export const validateEmail = [
         .isEmail()
         .withMessage('Please enter a valid email.')
 ]
+
+export const validateValor = [
+    body("valor")
+        .exists().withMessage("O campo 'valor' é obrigatório.")
+        .bail()
+        .isFloat({ gt: 0 }).withMessage("O valor deve ser um número maior que zero.")
+        .custom((value) => {
+            if (!/^\d+(\.\d{1,2})?$/.test(value.toString())) {
+                throw new Error("O valor deve ter no máximo 2 casas decimais.");
+            }
+            return true;
+        })
+]
