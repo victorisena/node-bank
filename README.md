@@ -24,7 +24,7 @@ O projeto utiliza **Prisma ORM** com **PostgreSQL** e segue boas práticas de or
 
 ### 1. Clone o repositório
 ```bash
-git clone https://github.com/seu-usuario/node-bank.git
+git clone https://github.com/victorisena/node-bank.git
 cd node-bank
 ```
 
